@@ -1,3 +1,6 @@
+import dayjs from "dayjs";
+import { useEffect, useState } from "react";
+import { http } from "../lib/axios";
 import { generateDatesFromYearBeginning } from "../utils/genarete-dates-from-year-beginning"
 import { HabitDay } from "./HabitDay"
 
@@ -10,7 +13,22 @@ const SummaryDates = generateDatesFromYearBeginning();
 const minimumSummaryDatesSize = 18 * 7;
 const amountOfDaysToFill = minimumSummaryDatesSize - SummaryDates.length;
 
+type Summary = {
+    id: string,
+    date: string,
+    amount: number,
+    completed: number
+}[]
+
 export default function SummaryTable() {
+    const [summary, setSummary] = useState<Summary>([]);
+
+    useEffect(() => {
+        http.get('summary').then(response => {
+            setSummary(response.data);
+        })
+    }, [])
+
     return(
         <div className="w-full flex">
             <div className="grid grid-rows-7 grid-flow-row gap-3">
@@ -25,20 +43,26 @@ export default function SummaryTable() {
 
             <div className="grid grid-rows-7 grid-flow-col gap-3">
                 {SummaryDates.map((date) => {
+                    const dayInSummary = summary.find(day => {
+                        return dayjs(date).isSame(day.date, 'day')
+                    })
                     return(
                         <HabitDay 
-                            amount={5} 
-                            completed={Math.round(Math.random())} 
+                            amount={dayInSummary?.amount} 
+                            date={date}
+                            completed={dayInSummary?.completed} 
                             key={date.toString()}
                         />
                     )
                 })}
 
-                {amountOfDaysToFill > 0 && Array.from({ length: amountOfDaysToFill }).map((_, i) => {
-                    return(
-                        <div className="w-10 h-10 bg-zinc-900 border-2 border-zinc-800 rounded-lg opacity-40 cursor-not-allowed" key={i} />
-                    )
-                })}
+                {
+                    amountOfDaysToFill > 0 && Array.from({ length: amountOfDaysToFill }).map((_, i) => {
+                        return(
+                            <div className="w-10 h-10 bg-zinc-900 border-2 border-zinc-800 rounded-lg opacity-40 cursor-not-allowed" key={i} />
+                        )
+                    })
+                }
             </div>
         </div>
     )
